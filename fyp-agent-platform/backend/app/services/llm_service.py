@@ -1,7 +1,11 @@
 # LLM 調用封裝
 #服務層 Service Layer， 將與 OpenAI API 互動的複雜邏輯「封裝（Encapsulate）」
+import re
+import json
 from openai import AsyncOpenAI
 from app.config import settings
+
+
 
 # LLMService 類別負責與 OpenAI API 互動，提供兩個主要功能：
 # 1. chat: 接收使用者訊息，並回傳 AI 的回覆。
@@ -47,3 +51,18 @@ class LLMService:
             response_format={"type": "json_object"},
         )
         return response.choices[0].message.content
+
+    def _extract_json(self, text: str) -> str:
+        """從可能包含 markdown 標記的回覆中擷取 JSON"""
+        # 嘗試找 ```json ... ``` 區塊
+        match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
+        if match:
+            return match.group(1).strip()
+
+        # 嘗試找第一個 { ... } 區塊
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            return match.group(0).strip()
+
+        # 都找不到就原樣回傳，讓上層處理錯誤
+        return text
