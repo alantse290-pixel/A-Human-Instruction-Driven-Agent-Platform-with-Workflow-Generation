@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_base_url: str = "https://api.openai.com/v1"
+
     debug: bool = True
 
 #告訴 Pydantic 在實例化時，要去專案根目錄尋找名為 .env 的檔案。

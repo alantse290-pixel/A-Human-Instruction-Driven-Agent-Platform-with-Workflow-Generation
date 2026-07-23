@@ -8,7 +8,10 @@ from app.config import settings
 # 2. generate_json: 接收使用者訊息和系統提示
 class LLMService:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url,
+        )
         self.model = settings.openai_model
 
     # chat 方法負責與 OpenAI 的 chat.completions API 互動，接收使用者訊息和可選的系統提示，並回傳 AI 的回覆。
