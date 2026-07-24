@@ -1,16 +1,35 @@
 # workflow API
 
 from fastapi import APIRouter
-from pydantic import BaseModel
-from app.services.llm_service import LLMService
+from pydantic import BaseModel, Field
+from ..services.llm_service import LLMService
+from ..services.workflow_service import WorkflowService
 import json
 
-router = APIRouter()
-llm_service = LLMService()
+#router = APIRouter()
+router = APIRouter(prefix="/api/workflow", tags=["workflow"])
+#llm_service = LLMService()
+workflow_service = WorkflowService()
 
 
 class GenerateRequest(BaseModel):
-    instruction: str
+    instruction: str = Field(
+        description="Natural language instruction describing the workflow",
+        examples=["Send a welcome email when a new user signs up"],
+    )
+class GenerateResponse(BaseModel):
+    success: bool
+    workflow: dict | None = None
+    errors: list[str] | None = None
+    retries: int = 0
+
+class ValidateRequest(BaseModel):
+    workflow: dict
+
+
+class ValidateResponse(BaseModel):
+    valid: bool
+    errors: list[str] = []
 
 class WorkflowNode(BaseModel):
     id: str
@@ -22,61 +41,21 @@ class WorkflowEdge(BaseModel):
     from_node: str  # 注意: JSON 裡的 key 是 "from"
     to_node: str    # JSON 裡的 key 是 "to"
 
-@router.get("/health")
-async def workflow_health():
-    return {"status": "workflow router is ready"}
-
-# 生成工作流程的 API 端點,驗證JSON 結構化輸出是否穩定
-@router.post("/generate")
+@router.post("/generate", response_model=GenerateResponse)
 async def generate_workflow(request: GenerateRequest):
-    result = await llm_service.generate_json(
-        user_message=request.instruction,
-        system_prompt=WORKFLOW_SYSTEM_PROMPT,
-    )
+    """從自然語言指令生成 workflow JSON"""
+    result = await workflow_service.generate(request.instruction)
+    return GenerateResponse(**result)
 
-    try:
-        workflow = json.loads(result)
 
-        # 基本結構驗證
-        assert "nodes" in workflow, "Missing 'nodes'"
-        assert "edges" in workflow, "Missing 'edges'"
-        assert len(workflow["nodes"]) > 0, "No nodes generated"
+@router.post("/validate", response_model=ValidateResponse)
+async def validate_workflow(request: ValidateRequest):
+    """驗證一個 workflow JSON 是否合法"""
+    from ..services.workflow_validator import WorkflowValidator
+    import json
 
-        return {
-            "success": True,
-            "workflow": workflow,
-        }
-    except (json.JSONDecodeError, AssertionError) as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "raw": result,
-        }
+    validator = WorkflowValidator()
+    raw_json = json.dumps(request.workflow)
+    is_valid, _, errors = validator.validate(raw_json)
 
-WORKFLOW_SYSTEM_PROMPT = """You are a workflow generator. Given a user instruction,
-generate a workflow as JSON with this exact structure:
-{
-  "name": "workflow name",
-  "description": "brief description of what this workflow does",
-  "nodes": [
-    {"id": "node_1", "type": "agent_type", "label": "what this node does", "config": {}}
-  ],
-  "edges": [
-    {"from": "node_1", "to": "node_2"}
-  ]
-}
-
-Rules:
-- Each node must have a unique id like "node_1", "node_2", etc.
-- edges define the execution order, "from" runs before "to"
-- Available agent types: search_agent, filter_agent, download_agent, llm_qa_agent, retrieval_agent
-
-Available agent descriptions:
-- search_agent: searches for papers/articles given a query
-- filter_agent: filters results by criteria (year, relevance, etc.)
-- download_agent: downloads papers/files
-- llm_qa_agent: uses LLM to answer questions or summarize
-- retrieval_agent: retrieves relevant chunks from a knowledge base
-
-Always return valid JSON. No extra explanation outside the JSON."""
-
+    return ValidateResponse(valid=is_valid, errors=errors)

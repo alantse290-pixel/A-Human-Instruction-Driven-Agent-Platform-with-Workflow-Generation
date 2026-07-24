@@ -13,7 +13,7 @@ WORKFLOW_SYSTEM_PROMPT = """You are a workflow generation engine. Your job is to
 ## Rules
 
 1. You MUST output ONLY valid JSON. No explanations, no markdown, no extra text.
-2. The JSON must strictly follow this schema:
+2. The JSON must strictly follow this schema: 
 
 ### Workflow Structure{
 "name": "string - workflow name",
@@ -72,6 +72,9 @@ WORKFLOW_SYSTEM_PROMPT = """You are a workflow generation engine. Your job is to
 - START nodes must not have incoming edges.
 - END nodes must not have outgoing edges.
 - Use {{variable_name}} syntax to reference outputs from previous nodes.
+- The action_type must be consistent with the node's actual behavior. For example, if posting to Slack, use http_request with Slack API, not send_email.
+- When processing a list of items, always use a loop node.
+- Node IDs in the array should be in logical execution order.
 
 ## Example
 

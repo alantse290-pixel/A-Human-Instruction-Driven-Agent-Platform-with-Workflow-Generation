@@ -3,12 +3,12 @@
 """
 Workflow 生成服務：串接 LLM + 驗證 + 修復
 """
-
+import logging
 import json
-from app.services.llm_service import LLMService
-from app.services.workflow_validator import WorkflowValidator
-from app.prompts.workflow_prompts import WORKFLOW_SYSTEM_PROMPT, WORKFLOW_REPAIR_PROMPT
-from app.schemas.workflow_schema import WorkflowDefinition
+from .llm_service import LLMService
+from .workflow_validator import WorkflowValidator
+from ..prompts.workflow_prompts import WORKFLOW_SYSTEM_PROMPT, WORKFLOW_REPAIR_PROMPT
+from ..schemas.workflow_schema import WorkflowDefinition
 
 
 class WorkflowService:
@@ -17,16 +17,27 @@ class WorkflowService:
         self.validator = WorkflowValidator()
         self.max_retries = 2
 
+    #
+
     async def generate(self, user_instruction: str) -> dict:
         """
         主流程：自然語言 → Workflow JSON
         包含驗證和自動修復機制
         """
+
         # Step 1: 用 LLM 生成初始 JSON
         raw_json = await self.llm.generate_json(
             user_message=user_instruction,
             system_prompt=WORKFLOW_SYSTEM_PROMPT,
         )
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"First attempt raw output:\n{raw_json[:500]}")
+
+        is_valid, workflow, errors = self.validator.validate(raw_json)
+    
+        if not is_valid:
+            logger.warning(f"First attempt failed with errors: {errors}")
 
         # Step 2: 驗證
         is_valid, workflow, errors = self.validator.validate(raw_json)
@@ -73,3 +84,5 @@ class WorkflowService:
             return True
         except (json.JSONDecodeError, TypeError):
             return False
+
+

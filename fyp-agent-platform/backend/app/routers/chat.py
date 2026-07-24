@@ -6,7 +6,7 @@
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.services.llm_service import LLMService
+from ..services.llm_service import LLMService
 
 #建立一個 FastAPI 的路由器實例 router，專門用於處理與聊天相關的 API 請求。
 router = APIRouter()

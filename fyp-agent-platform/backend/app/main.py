@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import workflow, chat
+from .routers import workflow, chat
 
 #建立一個 FastAPI 的應用程式實例 app。
 app = FastAPI(title="Agent Platform", version="0.1.0")

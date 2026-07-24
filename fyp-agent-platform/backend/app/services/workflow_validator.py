@@ -5,7 +5,7 @@
 import json
 from typing import Tuple
 
-from app.schemas.workflow_schema import WorkflowDefinition, NodeType
+from ..schemas.workflow_schema import WorkflowDefinition, NodeType
 
 
 class WorkflowValidator:

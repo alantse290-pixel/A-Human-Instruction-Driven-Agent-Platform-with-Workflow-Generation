@@ -3,7 +3,7 @@
 import re
 import json
 from openai import AsyncOpenAI
-from app.config import settings
+from ..config import settings
 
 
 
