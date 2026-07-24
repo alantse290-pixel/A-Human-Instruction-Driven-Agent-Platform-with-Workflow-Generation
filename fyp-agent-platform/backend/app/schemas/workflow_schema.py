@@ -93,6 +93,20 @@ class LoopParams(BaseModel):
     count: Optional[int] = Field(default=None, description="Number of iterations")
     body_node: str = Field(description="First node ID inside loop body")
 
+class EdgeType(str, Enum):
+    NORMAL = "normal"
+    LOOP_BODY = "loop_body"      # 進入 loop 體
+    LOOP_EXIT = "loop_exit"      # loop 結束後走的邊
+    TRUE_BRANCH = "true_branch"
+    FALSE_BRANCH = "false_branch"
+
+class WorkflowEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    edge_type: EdgeType = Field(default=EdgeType.NORMAL)
+    label: Optional[str] = None
+    condition: Optional[str] = None
 
 # ─── 節點定義 ───────────────────────────────────────────────
 
